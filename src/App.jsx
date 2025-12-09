@@ -5,12 +5,16 @@ import { supabase } from './lib/supabase'
 // Auth components
 import Login from './components/auth/Login'
 import Register from './components/auth/Register'
+import ForgotPassword from './components/auth/ForgotPassword'
+import ResetPassword from './components/auth/ResetPassword'
+import AuthCallback from './components/auth/AuthCallback'
 
 // User components
 import Dashboard from './components/user/Dashboard'
 import NewRequest from './components/user/NewRequest'
 import RequestHistory from './components/user/RequestHistory'
 import UserProfile from './components/user/UserProfile'
+import EditProfile from './components/user/EditProfile'
 
 // Payment components
 import CheckoutPage from './components/payment/CheckoutPage'
@@ -101,6 +105,24 @@ function App() {
               ? <Navigate to="/admin" /> 
               : <Navigate to="/dashboard" />
           } 
+        />
+        <Route 
+          path="/forgot-password" 
+          element={
+            !session 
+              ? <ForgotPassword /> 
+              : isStaff(userProfile?.role) 
+              ? <Navigate to="/admin" /> 
+              : <Navigate to="/dashboard" />
+          } 
+        />
+        <Route 
+          path="/reset-password" 
+          element={<ResetPassword />} 
+        />
+        <Route 
+          path="/auth/callback" 
+          element={<AuthCallback />} 
         />
 
         {/* Protected user routes - ONLY for residents */}
@@ -202,6 +224,16 @@ function App() {
             !session 
               ? <Navigate to="/login" />
               : <UserProfile user={session.user} profile={userProfile} />
+          } 
+        />
+        <Route 
+          path="/edit-profile" 
+          element={
+            !session 
+              ? <Navigate to="/login" />
+              : userProfile?.role !== 'resident'
+              ? <Navigate to="/profile" />
+              : <EditProfile user={session.user} profile={userProfile} />
           } 
         />
 

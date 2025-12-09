@@ -82,13 +82,23 @@ export default function UserProfile({ user, profile }) {
                   <p className="mt-1 text-black">{getRoleDescription(profileData?.role)}</p>
                 </div>
               </div>
-              <span
-                className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap ${getRoleBadgeColor(
-                  profileData?.role
-                )}`}
-              >
-                {profileData?.role?.charAt(0).toUpperCase() + profileData?.role?.slice(1)}
-              </span>
+              <div className="flex flex-col gap-2">
+                <span
+                  className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap text-center ${getRoleBadgeColor(
+                    profileData?.role
+                  )}`}
+                >
+                  {profileData?.role?.charAt(0).toUpperCase() + profileData?.role?.slice(1)}
+                </span>
+                {profileData?.role === 'resident' && (
+                  <button
+                    onClick={() => navigate('/edit-profile')}
+                    className="px-4 py-2 bg-primary-700 text-white rounded-lg hover:bg-accent-600 font-medium text-sm transition-colors"
+                  >
+                    Edit Profile
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
