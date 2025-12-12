@@ -137,27 +137,19 @@ export default function Analytics({ user, profile }) {
       }
       setMonthlyTrend(monthly)
 
-      // Fetch cancellation stats (use lowercase 'cancelled')
-      const { data: cancelledRequests, error: cancelError } = await supabase
-        .from('requests')
-        .select('id')
-        .eq('status', 'cancelled')
-
-      if (!cancelError) {
-        setCancellationCount(cancelledRequests?.length || 0)
-      }
+      // Fetch cancellation stats from ALL requests (not filtered by time period)
+      // Normalize status to handle both uppercase and lowercase
+      const normalizeStatus = (s) => (s || '').toLowerCase().replace(/\s+/g, '_')
+      const allCancelled = requests.filter(r => normalizeStatus(r.status) === 'cancelled')
+      setCancellationCount(allCancelled.length)
 
       // Fetch cancellation trend (this month only)
       const currentDate = new Date()
-      const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString()
-      const { data: thisMonthCancellations } = await supabase
-        .from('requests')
-        .select('id')
-        .eq('status', 'cancelled')
-        .gte('created_at', firstDayOfMonth)
-
-      if (thisMonthCancellations) {
-        setCancellationTrend(thisMonthCancellations.length)
+      const thisMonthCancelled = allCancelled.filter(r => {
+        const date = new Date(r.created_at)
+        return date.getMonth() === currentDate.getMonth() && date.getFullYear() === currentDate.getFullYear()
+      })
+      setCancellationTrend(thisMonthCancelled.length)
       }
     } catch (error) {
       console.error('Error fetching analytics:', error)
