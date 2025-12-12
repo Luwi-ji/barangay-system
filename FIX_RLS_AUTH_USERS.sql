@@ -183,11 +183,15 @@ WHEN (NEW.tracking_number IS NULL OR NEW.tracking_number = '')
 EXECUTE FUNCTION public.generate_tracking_number();
 
 -- Update existing requests without tracking numbers
-UPDATE public.requests
-SET tracking_number = 'BRG-' || TO_CHAR(created_at, 'YYYY') || '-' || LPAD(
-  ROW_NUMBER() OVER (ORDER BY created_at)::TEXT, 6, '0'
+WITH numbered_requests AS (
+  SELECT id, created_at, ROW_NUMBER() OVER (ORDER BY created_at) as rn
+  FROM public.requests
+  WHERE tracking_number IS NULL OR tracking_number = ''
 )
-WHERE tracking_number IS NULL OR tracking_number = '';
+UPDATE public.requests r
+SET tracking_number = 'BRG-' || TO_CHAR(nr.created_at, 'YYYY') || '-' || LPAD(nr.rn::TEXT, 6, '0')
+FROM numbered_requests nr
+WHERE r.id = nr.id;
 
 -- List current policies on profiles
 SELECT schemaname, tablename, policyname, permissive, roles, cmd
