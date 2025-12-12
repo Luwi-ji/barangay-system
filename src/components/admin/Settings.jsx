@@ -230,14 +230,14 @@ export default function Settings({ user, profile }) {
 
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Requirements
+                  Requirements (separate with commas or new lines)
                 </label>
                 <textarea
                   value={formData.requirements}
                   onChange={(e) => setFormData({...formData, requirements: e.target.value})}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black placeholder-gray-500"
-                  placeholder="List the required documents..."
-                  rows="2"
+                  placeholder="e.g., Valid ID, Birth Certificate, Proof of Residency"
+                  rows="3"
                 />
               </div>
             </div>
@@ -323,13 +323,14 @@ export default function Settings({ user, profile }) {
 
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Requirements
+                          Requirements (separate with commas or new lines)
                         </label>
                         <textarea
                           value={formData.requirements}
                           onChange={(e) => setFormData({...formData, requirements: e.target.value})}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-black"
-                          rows="2"
+                          placeholder="e.g., Valid ID, Birth Certificate, Proof of Residency"
+                          rows="3"
                         />
                       </div>
                     </div>

@@ -356,10 +356,17 @@ export default function NewRequest({ user, profile }) {
           </div>
 
           {/* Document Details */}
-          {selectedDocType && (
+          {selectedDocType && selectedDocType.requirements && (
             <div className="bg-purple-50 border-2 border-purple-600 rounded-lg p-3 sm:p-4 text-sm shadow-md shadow-purple-200">
               <h3 className="font-bold text-purple-900 mb-2 text-base">Requirements</h3>
-              <p className="text-xs sm:text-sm text-purple-900 font-medium">{selectedDocType.requirements}</p>
+              <ul className="text-xs sm:text-sm text-purple-900 font-medium space-y-1">
+                {selectedDocType.requirements.split(/[\n,;•·-]/).filter(r => r.trim()).map((req, idx) => (
+                  <li key={idx} className="flex items-start">
+                    <span className="mr-2">•</span>
+                    <span>{req.trim()}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
