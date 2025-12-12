@@ -10,15 +10,31 @@ export const formatDateTime = (date) => {
 }
 
 export const getStatusColor = (status) => {
+  // Normalize status to handle different cases
+  const normalizedStatus = (status || '').toLowerCase().replace(/_/g, ' ')
+  
   const colors = {
-    'Pending': 'bg-yellow-100 text-yellow-800',
-    'Processing': 'bg-blue-100 text-blue-800',
-    'Ready for Pickup': 'bg-green-100 text-green-800',
-    'Completed': 'bg-gray-100 text-gray-800',
-    'Declined': 'bg-red-100 text-red-800',
-    'Cancelled': 'bg-slate-100 text-slate-800',
+    'pending': 'bg-yellow-100 text-yellow-800',
+    'processing': 'bg-blue-100 text-blue-800',
+    'ready for pickup': 'bg-green-100 text-green-800',
+    'ready_for_pickup': 'bg-green-100 text-green-800',
+    'completed': 'bg-gray-100 text-gray-800',
+    'declined': 'bg-red-100 text-red-800',
+    'rejected': 'bg-red-100 text-red-800',
+    'cancelled': 'bg-slate-100 text-slate-800',
+    'canceled': 'bg-slate-100 text-slate-800',
   }
-  return colors[status] || 'bg-gray-100 text-gray-800'
+  return colors[normalizedStatus] || 'bg-gray-100 text-gray-800'
+}
+
+// Format status for display (capitalize properly)
+export const formatStatus = (status) => {
+  if (!status) return ''
+  // Handle snake_case and capitalize each word
+  return status
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase())
 }
 
 export const uploadFile = async (supabase, bucket, path, file) => {

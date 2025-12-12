@@ -139,6 +139,56 @@ EXECUTE FUNCTION public.create_profile_for_user();
 -- ============================================================================
 SELECT 'RLS policies, email check function, and triggers fixed successfully!' as status;
 
+-- ============================================================================
+-- PART 4: Add Tracking Number Generation
+-- ============================================================================
+
+-- Function to generate tracking number
+CREATE OR REPLACE FUNCTION public.generate_tracking_number()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_year TEXT;
+  v_sequence INT;
+  v_tracking TEXT;
+BEGIN
+  -- Format: BRG-YYYY-XXXXXX (e.g., BRG-2025-000001)
+  v_year := TO_CHAR(NOW(), 'YYYY');
+  
+  -- Get the next sequence number for this year
+  SELECT COALESCE(MAX(
+    CASE 
+      WHEN tracking_number LIKE 'BRG-' || v_year || '-%' 
+      THEN CAST(SUBSTRING(tracking_number FROM 10) AS INTEGER)
+      ELSE 0 
+    END
+  ), 0) + 1 INTO v_sequence
+  FROM public.requests;
+  
+  -- Generate tracking number
+  v_tracking := 'BRG-' || v_year || '-' || LPAD(v_sequence::TEXT, 6, '0');
+  
+  NEW.tracking_number := v_tracking;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Drop existing trigger if any
+DROP TRIGGER IF EXISTS generate_tracking_number_trigger ON public.requests;
+
+-- Create trigger to generate tracking number before insert
+CREATE TRIGGER generate_tracking_number_trigger
+BEFORE INSERT ON public.requests
+FOR EACH ROW
+WHEN (NEW.tracking_number IS NULL OR NEW.tracking_number = '')
+EXECUTE FUNCTION public.generate_tracking_number();
+
+-- Update existing requests without tracking numbers
+UPDATE public.requests
+SET tracking_number = 'BRG-' || TO_CHAR(created_at, 'YYYY') || '-' || LPAD(
+  ROW_NUMBER() OVER (ORDER BY created_at)::TEXT, 6, '0'
+)
+WHERE tracking_number IS NULL OR tracking_number = '';
+
 -- List current policies on profiles
 SELECT schemaname, tablename, policyname, permissive, roles, cmd
 FROM pg_policies
