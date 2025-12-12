@@ -77,19 +77,14 @@ export const handleOAuthCallback = async () => {
       }
     }
 
-    // Try to parse a session from the URL (this handles magic-link / provider redirects)
-    const { data: fromUrlData, error: fromUrlError } = await supabase.auth.getSessionFromUrl({ storeSession: true })
+    // In Supabase v2, getSession() automatically parses tokens from URL hash
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
 
-    if (fromUrlError) {
-      // If the URL parsing failed, fall back to checking any existing session
-      console.warn('getSessionFromUrl error:', fromUrlError.message || fromUrlError)
+    if (sessionError) {
+      console.warn('getSession error:', sessionError.message || sessionError)
     }
 
-    const session = fromUrlData?.session || (await (async () => {
-      const { data, error } = await supabase.auth.getSession()
-      if (error) throw error
-      return data.session
-    })())
+    const session = sessionData?.session
 
     if (!session) {
       return { success: false, error: 'No session found. Please sign in.' }

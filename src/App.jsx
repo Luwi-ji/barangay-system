@@ -33,48 +33,36 @@ function App() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // If the URL contains Supabase auth tokens (magic link or provider redirect),
-    // parse and store the session so the app doesn't end up on a blank page.
-    const rawHash = window.location.hash || ''
-    const rawQuery = window.location.search || ''
-    const combined = (rawHash.startsWith('#') ? rawHash.slice(1) : rawHash) || rawQuery
-
-    const processSessionFromUrl = async () => {
+    // Initialize auth - Supabase v2 automatically handles URL tokens via getSession()
+    const initAuth = async () => {
       try {
-        if (combined.includes('access_token') || combined.includes('error') || combined.includes('refresh_token')) {
-          const { data, error } = await supabase.auth.getSessionFromUrl({ storeSession: true })
-          if (error) {
-            console.warn('getSessionFromUrl:', error)
-          }
-          const s = data?.session || null
-          setSession(s)
-          if (s) {
-            await fetchUserProfile(s.user.id)
-          }
-          // Clean the URL hash/query to remove tokens
-          try { window.history.replaceState({}, document.title, window.location.pathname + window.location.search) } catch (e) { /* ignore */ }
-          setLoading(false)
-          return
+        // getSession() in v2 automatically parses tokens from URL hash if present
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.warn('getSession error:', error)
         }
-      } catch (e) {
-        console.error('Error processing session from URL:', e)
-      }
-
-      // Fallback: get existing session normally
-      supabase.auth.getSession().then(({ data: { session } }) => {
+        
         setSession(session)
         if (session) {
-          fetchUserProfile(session.user.id)
-        } else {
-          setLoading(false)
+          await fetchUserProfile(session.user.id)
         }
-      }).catch(err => {
-        console.error('getSession error:', err)
+        
+        // Clean the URL hash/query to remove tokens if present
+        const rawHash = window.location.hash || ''
+        if (rawHash.includes('access_token') || rawHash.includes('error')) {
+          try { 
+            window.history.replaceState({}, document.title, window.location.pathname) 
+          } catch (e) { /* ignore */ }
+        }
+      } catch (e) {
+        console.error('Error initializing auth:', e)
+      } finally {
         setLoading(false)
-      })
+      }
     }
 
-    processSessionFromUrl()
+    initAuth()
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
