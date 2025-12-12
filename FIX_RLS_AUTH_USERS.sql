@@ -104,7 +104,7 @@ BEGIN
           COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email, 'User'),
           COALESCE(NEW.raw_user_meta_data->>'mobile', ''),
           COALESCE(NEW.raw_user_meta_data->>'address', ''),
-          NULLIF(NEW.raw_user_meta_data->>'birth_date', ''),
+          NULLIF(NEW.raw_user_meta_data->>'birth_date', '')::DATE,
           COALESCE(NEW.raw_user_meta_data->>'role', 'resident'),
           'active',
           NOW(),
