@@ -36,13 +36,15 @@ export default function AdminDashboard({ user, profile }) {
 
       if (allRequests) {
         const today = new Date().toDateString()
+        // Normalize status to lowercase for comparison
+        const normalizeStatus = (s) => (s || '').toLowerCase().replace(/\s+/g, '_')
         setStats({
           total: allRequests.length,
-          pending: allRequests.filter(r => r.status === 'Pending').length,
-          processing: allRequests.filter(r => r.status === 'Processing').length,
-          ready: allRequests.filter(r => r.status === 'Ready for Pickup').length,
-          completed: allRequests.filter(r => r.status === 'Completed').length,
-          declined: allRequests.filter(r => r.status === 'Declined').length,
+          pending: allRequests.filter(r => normalizeStatus(r.status) === 'pending').length,
+          processing: allRequests.filter(r => normalizeStatus(r.status) === 'processing').length,
+          ready: allRequests.filter(r => normalizeStatus(r.status) === 'ready_for_pickup').length,
+          completed: allRequests.filter(r => normalizeStatus(r.status) === 'completed').length,
+          declined: allRequests.filter(r => ['rejected', 'declined'].includes(normalizeStatus(r.status))).length,
           today: allRequests.filter(r => 
             new Date(r.created_at).toDateString() === today
           ).length
@@ -75,6 +77,19 @@ export default function AdminDashboard({ user, profile }) {
     return <LoadingSpinner />
   }
 
+  // Get role-specific dashboard title
+  const getDashboardTitle = () => {
+    switch (profile?.role) {
+      case 'encoder':
+        return 'Encoder Dashboard'
+      case 'captain':
+        return 'Captain Dashboard'
+      case 'admin':
+      default:
+        return 'Admin Dashboard'
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar user={user} userProfile={profile} />
@@ -82,7 +97,7 @@ export default function AdminDashboard({ user, profile }) {
       <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         {/* Header */}
         <div className="mb-6 sm:mb-8 bg-gradient-to-r from-dark-800 to-dark-900 rounded-lg shadow-sm p-6 sm:p-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-black">Admin Dashboard</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-black">{getDashboardTitle()}</h1>
           <p className="mt-2 text-sm sm:text-base text-black">
             Welcome back, {profile?.full_name}
           </p>

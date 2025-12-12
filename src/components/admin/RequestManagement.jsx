@@ -150,10 +150,23 @@ export default function RequestManagement({ user, profile }) {
     }
   }
 
+  // Helper to normalize status to lowercase snake_case
+  const normalizeStatus = (status) => {
+    if (!status) return 'pending'
+    const normalized = status.toLowerCase().replace(/\s+/g, '_')
+    // Map old status values to new ones
+    const statusMap = {
+      'declined': 'rejected',
+      'ready for pickup': 'ready_for_pickup',
+      'readyforpickup': 'ready_for_pickup'
+    }
+    return statusMap[normalized] || normalized
+  }
+
   const handleViewRequest = (request) => {
     setSelectedRequest(request)
     setUpdateForm({
-      status: request.status,
+      status: normalizeStatus(request.status),
       notes: request.admin_notes || ''
     })
     setUploadedFile(null)
