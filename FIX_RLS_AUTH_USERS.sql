@@ -280,3 +280,155 @@ WHERE email IN ('admin@test.com', 'captain@test.com', 'encoder@test.com');
 SELECT trigger_name, event_manipulation, action_timing
 FROM information_schema.triggers
 WHERE event_object_table = 'users' AND event_object_schema = 'auth';
+
+-- ============================================================================
+-- PART 7: Create is_staff() function and fix requests RLS policies
+-- ============================================================================
+
+-- Create a function to check if user is staff (admin, captain, OR encoder)
+-- This uses SECURITY DEFINER to bypass RLS recursion issues
+CREATE OR REPLACE FUNCTION public.is_staff()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles 
+    WHERE id = auth.uid() 
+    AND role IN ('admin', 'captain', 'encoder')
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+-- Grant execute to authenticated users
+GRANT EXECUTE ON FUNCTION public.is_staff() TO authenticated;
+
+-- ============================================================================
+-- PART 8: Fix Requests RLS Policies (using is_staff() to avoid recursion)
+-- ============================================================================
+
+-- Drop existing policies
+DROP POLICY IF EXISTS "requests_select_own" ON public.requests;
+DROP POLICY IF EXISTS "requests_select_staff" ON public.requests;
+DROP POLICY IF EXISTS "requests_update_own" ON public.requests;
+DROP POLICY IF EXISTS "requests_update_staff" ON public.requests;
+DROP POLICY IF EXISTS "Allow users to view their own requests" ON public.requests;
+DROP POLICY IF EXISTS "Allow staff to view all requests" ON public.requests;
+DROP POLICY IF EXISTS "Allow users to update their own requests" ON public.requests;
+DROP POLICY IF EXISTS "Allow staff to update requests" ON public.requests;
+
+-- Enable RLS
+ALTER TABLE public.requests ENABLE ROW LEVEL SECURITY;
+
+-- Users can view their own requests
+CREATE POLICY "requests_select_own"
+ON public.requests FOR SELECT
+TO authenticated
+USING (user_id = auth.uid());
+
+-- Staff (admin, captain, encoder) can view ALL requests
+CREATE POLICY "requests_select_staff"
+ON public.requests FOR SELECT
+TO authenticated
+USING (public.is_staff());
+
+-- Users can update their own requests (e.g., cancel)
+CREATE POLICY "requests_update_own"
+ON public.requests FOR UPDATE
+TO authenticated
+USING (user_id = auth.uid())
+WITH CHECK (user_id = auth.uid());
+
+-- Staff can update any request
+CREATE POLICY "requests_update_staff"
+ON public.requests FOR UPDATE
+TO authenticated
+USING (public.is_staff())
+WITH CHECK (public.is_staff());
+
+-- ============================================================================
+-- PART 9: Fix Status History RLS Policies
+-- ============================================================================
+
+DROP POLICY IF EXISTS "status_history_select_own" ON public.status_history;
+DROP POLICY IF EXISTS "status_history_select_staff" ON public.status_history;
+DROP POLICY IF EXISTS "status_history_insert_staff" ON public.status_history;
+DROP POLICY IF EXISTS "Allow users to view status history for their requests" ON public.status_history;
+DROP POLICY IF EXISTS "Allow staff to view all status history" ON public.status_history;
+DROP POLICY IF EXISTS "Allow staff to insert status history" ON public.status_history;
+
+-- Enable RLS
+ALTER TABLE public.status_history ENABLE ROW LEVEL SECURITY;
+
+-- Users can view status history for their own requests
+CREATE POLICY "status_history_select_own"
+ON public.status_history FOR SELECT
+TO authenticated
+USING (request_id IN (SELECT id FROM public.requests WHERE user_id = auth.uid()));
+
+-- Staff can view all status history
+CREATE POLICY "status_history_select_staff"
+ON public.status_history FOR SELECT
+TO authenticated
+USING (public.is_staff());
+
+-- Staff can insert status history entries
+CREATE POLICY "status_history_insert_staff"
+ON public.status_history FOR INSERT
+TO authenticated
+WITH CHECK (public.is_staff());
+
+-- ============================================================================
+-- PART 10: Fix Payments RLS Policies
+-- ============================================================================
+
+DROP POLICY IF EXISTS "payments_select_own" ON public.payments;
+DROP POLICY IF EXISTS "payments_select_staff" ON public.payments;
+DROP POLICY IF EXISTS "payments_insert_staff" ON public.payments;
+DROP POLICY IF EXISTS "payments_update_staff" ON public.payments;
+
+-- Enable RLS
+ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+
+-- Users can view their own payments
+CREATE POLICY "payments_select_own"
+ON public.payments FOR SELECT
+TO authenticated
+USING (request_id IN (SELECT id FROM public.requests WHERE user_id = auth.uid()));
+
+-- Staff can view all payments
+CREATE POLICY "payments_select_staff"
+ON public.payments FOR SELECT
+TO authenticated
+USING (public.is_staff());
+
+-- Staff can insert payments
+CREATE POLICY "payments_insert_staff"
+ON public.payments FOR INSERT
+TO authenticated
+WITH CHECK (public.is_staff());
+
+-- Staff can update payments
+CREATE POLICY "payments_update_staff"
+ON public.payments FOR UPDATE
+TO authenticated
+USING (public.is_staff())
+WITH CHECK (public.is_staff());
+
+-- ============================================================================
+-- PART 11: Verify the new functions and policies
+-- ============================================================================
+
+-- Check is_staff function exists
+SELECT proname, prosrc 
+FROM pg_proc 
+WHERE proname IN ('is_admin', 'is_staff');
+
+-- List policies on requests
+SELECT tablename, policyname, roles, cmd
+FROM pg_policies
+WHERE tablename = 'requests';
+
+-- List policies on status_history
+SELECT tablename, policyname, roles, cmd
+FROM pg_policies
+WHERE tablename = 'status_history';
+
