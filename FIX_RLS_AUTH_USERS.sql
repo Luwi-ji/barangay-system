@@ -458,13 +458,7 @@ SELECT column_name, data_type
 FROM information_schema.columns 
 WHERE table_name = 'requests' AND column_name = 'processed_by';
 
--- ============================================================================
--- PART 13: Fix existing request status values to lowercase
--- ============================================================================
--- The database constraint expects lowercase status values:
--- 'pending', 'processing', 'ready_for_pickup', 'completed', 'rejected', 'cancelled'
-
--- Update any old-format status values to new lowercase format
+-- Fix existing request status values to lowercase
 UPDATE public.requests SET status = 'pending' WHERE LOWER(status) = 'pending' AND status != 'pending';
 UPDATE public.requests SET status = 'processing' WHERE LOWER(status) = 'processing' AND status != 'processing';
 UPDATE public.requests SET status = 'ready_for_pickup' WHERE LOWER(REPLACE(status, ' ', '_')) = 'ready_for_pickup' AND status != 'ready_for_pickup';
@@ -472,5 +466,8 @@ UPDATE public.requests SET status = 'completed' WHERE LOWER(status) = 'completed
 UPDATE public.requests SET status = 'rejected' WHERE LOWER(status) IN ('rejected', 'declined') AND status NOT IN ('rejected');
 UPDATE public.requests SET status = 'cancelled' WHERE LOWER(status) IN ('cancelled', 'canceled') AND status != 'cancelled';
 
--- Verify status values
-SELECT status, COUNT(*) FROM public.requests GROUP BY status;
+-- Also add the processed_by column if missing
+ALTER TABLE public.requests ADD COLUMN IF NOT EXISTS processed_by UUID REFERENCES public.profiles(id);
+
+-- Verify the status values are now lowercase
+SELECT id, tracking_number, status FROM public.requests;
