@@ -432,3 +432,29 @@ SELECT tablename, policyname, roles, cmd
 FROM pg_policies
 WHERE tablename = 'status_history';
 
+-- ============================================================================
+-- PART 12: Add processed_by column to requests table
+-- ============================================================================
+-- This column tracks which staff member processed/updated each request
+
+-- Add the column if it doesn't exist
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'requests' 
+    AND column_name = 'processed_by'
+  ) THEN
+    ALTER TABLE public.requests ADD COLUMN processed_by UUID REFERENCES public.profiles(id);
+  END IF;
+END $$;
+
+-- Create an index for faster lookups
+CREATE INDEX IF NOT EXISTS idx_requests_processed_by ON public.requests(processed_by);
+
+-- Verify the column was added
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'requests' AND column_name = 'processed_by';
+
