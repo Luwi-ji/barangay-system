@@ -256,7 +256,7 @@ export default function RequestManagement({ user, profile }) {
     if (!selectedRequest) return
     
     // Prevent updating cancelled requests
-    if (selectedRequest.status === 'Cancelled') {
+    if (selectedRequest.status === 'cancelled') {
       alert('Cannot update a cancelled request')
       return
     }
@@ -375,12 +375,12 @@ export default function RequestManagement({ user, profile }) {
                 className="w-full pl-10 sm:pl-12 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent appearance-none text-gray-900 bg-white text-sm"
               >
                 <option value="all">All Status</option>
-                <option value="Pending" style={{ color: '#b45309' }}>● Pending</option>
-                <option value="Processing" style={{ color: '#0369a1' }}>● Processing</option>
-                <option value="Ready for Pickup" style={{ color: '#15803d' }}>● Ready for Pickup</option>
-                <option value="Completed" style={{ color: '#6b7280' }}>● Completed</option>
-                <option value="Declined" style={{ color: '#dc2626' }}>● Declined</option>
-                <option value="Cancelled" style={{ color: '#7c3aed' }}>● Cancelled</option>
+                <option value="pending">● Pending</option>
+                <option value="processing">● Processing</option>
+                <option value="ready_for_pickup">● Ready for Pickup</option>
+                <option value="completed">● Completed</option>
+                <option value="rejected">● Rejected</option>
+                <option value="cancelled">● Cancelled</option>
               </select>
             </div>
           </div>
@@ -566,7 +566,7 @@ export default function RequestManagement({ user, profile }) {
               </div>
 
               {/* Cancellation Info */}
-              {selectedRequest.status === 'Cancelled' && (
+              {selectedRequest.status === 'cancelled' && (
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 sm:p-4 text-xs sm:text-sm">
                   <h4 className="font-medium text-gray-900 mb-2">Cancellation Information</h4>
                   <p className="text-gray-600">
@@ -748,11 +748,11 @@ export default function RequestManagement({ user, profile }) {
                       onChange={(e) => setUpdateForm({...updateForm, status: e.target.value})}
                       className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent text-gray-900 bg-white text-sm"
                     >
-                      <option value="Pending" style={{ color: '#b45309' }}>● Pending</option>
-                      <option value="Processing" style={{ color: '#0369a1' }}>● Processing</option>
-                      <option value="Ready for Pickup" style={{ color: '#15803d' }}>● Ready for Pickup</option>
-                      <option value="Completed" style={{ color: '#6b7280' }}>● Completed</option>
-                      <option value="Declined" style={{ color: '#dc2626' }}>● Declined</option>
+                      <option value="pending">● Pending</option>
+                      <option value="processing">● Processing</option>
+                      <option value="ready_for_pickup">● Ready for Pickup</option>
+                      <option value="completed">● Completed</option>
+                      <option value="rejected">● Rejected</option>
                     </select>
                   </div>
 
