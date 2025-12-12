@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import Navbar from '../shared/Navbar'
 import LoadingSpinner from '../shared/LoadingSpinner'
-import StripePaymentModal from '../payment/StripePaymentModal'
 import { FileText, Upload, ArrowLeft, AlertCircle } from 'lucide-react'
 
 export default function NewRequest({ user, profile }) {
@@ -14,10 +13,6 @@ export default function NewRequest({ user, profile }) {
   const [selectedIdFront, setSelectedIdFront] = useState(null)
   const [selectedIdBack, setSelectedIdBack] = useState(null)
   const [selectedAdditionalFiles, setSelectedAdditionalFiles] = useState([])
-  const [documentName, setDocumentName] = useState('')
-  const [documentPrice, setDocumentPrice] = useState(0)
-  const [showPaymentModal, setShowPaymentModal] = useState(false)
-  const [requestId, setRequestId] = useState(null)
   const [formData, setFormData] = useState({
     document_type_id: '',
     purpose: ''
@@ -203,9 +198,7 @@ export default function NewRequest({ user, profile }) {
           document_type_id: formData.document_type_id,
           purpose: formData.purpose,
           id_image_url: idFrontFileName,
-          id_image_back_url: idBackFileName,
-          status: 'Pending',
-          payment_status: 'pending'
+          id_image_back_url: idBackFileName
         })
         .select()
 
@@ -271,34 +264,9 @@ export default function NewRequest({ user, profile }) {
         }
       }
 
-      // Get document type info for payment modal
-      const docType = documentTypes.find(dt => dt.id.toString() === formData.document_type_id)
-      const documentPrice = parseFloat(docType?.price || 0)
-      
-      setRequestId(createdRequestId)
-      setDocumentName(docType?.name || 'Document')
-      setDocumentPrice(documentPrice)
-      
-      // If document is free, skip payment and mark as Processing
-      if (documentPrice === 0) {
-        const { error: updateError } = await supabase
-          .from('requests')
-          .update({
-            payment_status: 'completed',
-            status: 'Processing'
-          })
-          .eq('id', createdRequestId)
-
-        if (updateError) {
-          console.error('Error updating free request status:', updateError)
-          throw updateError
-        }
-
-        alert('Request submitted successfully!')
-        navigate('/dashboard')
-      } else {
-        setShowPaymentModal(true)
-      }
+      // Request submitted successfully - redirect to dashboard
+      alert('Request submitted successfully!')
+      navigate('/dashboard')
       
       setSubmitting(false)
     } catch (error) {
@@ -306,39 +274,6 @@ export default function NewRequest({ user, profile }) {
       setError(error.message || 'Failed to submit request. Please try again.')
       setSubmitting(false)
     }
-  }
-
-  const handlePaymentSuccess = async (paymentIntentId) => {
-    try {
-      // Update request with payment details
-      const { error: updateError } = await supabase
-        .from('requests')
-        .update({
-          payment_status: 'completed',
-          stripe_payment_intent_id: paymentIntentId,
-          status: 'Processing'
-        })
-        .eq('id', requestId)
-
-      if (updateError) {
-        console.error('Error updating request payment status:', updateError)
-        throw updateError
-      }
-
-      console.log('Request payment status updated successfully')
-      
-      // Show success message and redirect
-      alert('Payment successful! Your request has been submitted.')
-      navigate('/dashboard')
-    } catch (error) {
-      console.error('Error handling payment success:', error)
-      setError('Payment processed but failed to update request. Please contact support.')
-    }
-  }
-
-  const handlePaymentCancel = () => {
-    setShowPaymentModal(false)
-    setRequestId(null)
   }
 
   const selectedDocType = documentTypes.find(
@@ -665,18 +600,6 @@ export default function NewRequest({ user, profile }) {
             </button>
           </div>
         </form>
-
-        {/* Payment Modal */}
-        {showPaymentModal && requestId && (
-          <StripePaymentModal
-            isOpen={showPaymentModal}
-            onClose={handlePaymentCancel}
-            documentName={documentName}
-            amount={documentPrice}
-            requestId={requestId}
-            onPaymentSuccess={handlePaymentSuccess}
-          />
-        )}
       </div>
     </div>
   )
