@@ -5,6 +5,7 @@ import Navbar from '../shared/Navbar'
 import LoadingSpinner from '../shared/LoadingSpinner'
 import { ArrowLeft, TrendingUp, Download, X } from 'lucide-react'
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { formatStatus, getStatusColor } from '../../utils/helpers'
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
 
@@ -94,10 +95,11 @@ export default function Analytics({ user, profile }) {
         Object.entries(docTypes).map(([name, value]) => ({ name, value }))
       )
 
-      // Status distribution
+      // Status distribution - use formatted status names for display
       const statuses = {}
       filteredRequests.forEach(r => {
-        statuses[r.status] = (statuses[r.status] || 0) + 1
+        const formattedName = formatStatus(r.status)
+        statuses[formattedName] = (statuses[formattedName] || 0) + 1
       })
       setStatusData(
         Object.entries(statuses).map(([name, value]) => ({ name, value }))
@@ -135,11 +137,11 @@ export default function Analytics({ user, profile }) {
       }
       setMonthlyTrend(monthly)
 
-      // Fetch cancellation stats
+      // Fetch cancellation stats (use lowercase 'cancelled')
       const { data: cancelledRequests, error: cancelError } = await supabase
         .from('requests')
         .select('id')
-        .eq('status', 'Cancelled')
+        .eq('status', 'cancelled')
 
       if (!cancelError) {
         setCancellationCount(cancelledRequests?.length || 0)
@@ -151,7 +153,7 @@ export default function Analytics({ user, profile }) {
       const { data: thisMonthCancellations } = await supabase
         .from('requests')
         .select('id')
-        .eq('status', 'Cancelled')
+        .eq('status', 'cancelled')
         .gte('created_at', firstDayOfMonth)
 
       if (thisMonthCancellations) {
@@ -370,14 +372,8 @@ export default function Analytics({ user, profile }) {
                       <td className="py-3 px-4 text-gray-900">{request.id.slice(0, 8)}...</td>
                       <td className="py-3 px-4 text-gray-700">{request.document_types?.name || 'Unknown'}</td>
                       <td className="py-3 px-4">
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          request.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                          request.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                          request.status === 'Processing' ? 'bg-blue-100 text-blue-800' :
-                          request.status === 'Cancelled' ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {request.status}
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(request.status)}`}>
+                          {formatStatus(request.status)}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-gray-600">

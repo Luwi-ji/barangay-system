@@ -135,10 +135,10 @@ export default function AdminDashboard({ user, profile }) {
             <div className="flex items-center justify-between">
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-gray-600">Processing</p>
-                <p className="text-2xl sm:text-3xl font-bold text-primary-700 mt-1">{stats.processing}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-blue-600 mt-1">{stats.processing}</p>
               </div>
-              <div className="w-10 sm:w-12 h-10 sm:h-12 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <AlertCircle className="w-5 sm:w-6 h-5 sm:h-6 text-primary-700" />
+              <div className="w-10 sm:w-12 h-10 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-5 sm:w-6 h-5 sm:h-6 text-blue-600" />
               </div>
             </div>
             <p className="text-xs text-gray-500 mt-2">In progress</p>
