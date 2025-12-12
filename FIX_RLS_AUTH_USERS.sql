@@ -193,10 +193,88 @@ SET tracking_number = 'BRG-' || TO_CHAR(nr.created_at, 'YYYY') || '-' || LPAD(nr
 FROM numbered_requests nr
 WHERE r.id = nr.id;
 
+-- ============================================================================
+-- PART 5: Fix Document Types RLS Policies
+-- ============================================================================
+
+-- Create a function to check if user is admin (avoids RLS recursion issues)
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles 
+    WHERE id = auth.uid() 
+    AND role IN ('admin', 'captain')
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+-- Grant execute to authenticated users
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
+
+-- Drop existing document_types policies
+DROP POLICY IF EXISTS "document_types_select_active" ON public.document_types;
+DROP POLICY IF EXISTS "document_types_select" ON public.document_types;
+DROP POLICY IF EXISTS "document_types_insert_admin" ON public.document_types;
+DROP POLICY IF EXISTS "document_types_update_admin" ON public.document_types;
+DROP POLICY IF EXISTS "Anyone can view active document types" ON public.document_types;
+DROP POLICY IF EXISTS "Only admins can insert document types" ON public.document_types;
+DROP POLICY IF EXISTS "Only admins can update document types" ON public.document_types;
+
+-- Enable RLS on document_types
+ALTER TABLE public.document_types ENABLE ROW LEVEL SECURITY;
+
+-- Anyone can view document types (for selection dropdown)
+CREATE POLICY "document_types_select"
+ON public.document_types FOR SELECT
+TO authenticated
+USING (true);
+
+-- Admins and captains can insert document types
+CREATE POLICY "document_types_insert_admin"
+ON public.document_types FOR INSERT
+TO authenticated
+WITH CHECK (public.is_admin());
+
+-- Admins and captains can update document types
+CREATE POLICY "document_types_update_admin"
+ON public.document_types FOR UPDATE
+TO authenticated
+USING (public.is_admin())
+WITH CHECK (public.is_admin());
+
+-- Admins and captains can delete document types
+DROP POLICY IF EXISTS "document_types_delete_admin" ON public.document_types;
+CREATE POLICY "document_types_delete_admin"
+ON public.document_types FOR DELETE
+TO authenticated
+USING (public.is_admin());
+
+-- ============================================================================
+-- PART 6: Fix Test Account Roles
+-- ============================================================================
+
+UPDATE public.profiles SET role = 'admin', updated_at = NOW() WHERE email = 'admin@test.com';
+UPDATE public.profiles SET role = 'captain', updated_at = NOW() WHERE email = 'captain@test.com';
+UPDATE public.profiles SET role = 'encoder', updated_at = NOW() WHERE email = 'encoder@test.com';
+
+-- ============================================================================
+-- VERIFICATION
+-- ============================================================================
+
 -- List current policies on profiles
 SELECT schemaname, tablename, policyname, permissive, roles, cmd
 FROM pg_policies
 WHERE tablename = 'profiles';
+
+-- List policies on document_types
+SELECT schemaname, tablename, policyname, permissive, roles, cmd
+FROM pg_policies
+WHERE tablename = 'document_types';
+
+-- Verify test account roles
+SELECT email, role FROM public.profiles 
+WHERE email IN ('admin@test.com', 'captain@test.com', 'encoder@test.com');
 
 -- List triggers on auth.users
 SELECT trigger_name, event_manipulation, action_timing
