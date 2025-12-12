@@ -39,6 +39,21 @@ export default function Settings({ user, profile }) {
     }
   }
 
+  // Helper to convert requirements string to array
+  const parseRequirements = (str) => {
+    if (!str || str.trim() === '') return []
+    return str
+      .split(/[,\n]+/)
+      .map(item => item.trim())
+      .filter(item => item.length > 0)
+  }
+
+  // Helper to convert requirements array to string for display
+  const formatRequirementsForEdit = (arr) => {
+    if (!arr || !Array.isArray(arr)) return ''
+    return arr.join('\n')
+  }
+
   const handleAdd = async () => {
     try {
       const { error } = await supabase
@@ -47,7 +62,7 @@ export default function Settings({ user, profile }) {
           name: formData.name,
           description: formData.description,
           price: parseFloat(formData.price),
-          requirements: formData.requirements,
+          requirements: parseRequirements(formData.requirements),
           processing_days: parseInt(formData.processing_days),
           is_active: true
         })
@@ -72,7 +87,7 @@ export default function Settings({ user, profile }) {
           name: formData.name,
           description: formData.description,
           price: parseFloat(formData.price),
-          requirements: formData.requirements,
+          requirements: parseRequirements(formData.requirements),
           processing_days: parseInt(formData.processing_days)
         })
         .eq('id', id)
@@ -110,7 +125,7 @@ export default function Settings({ user, profile }) {
       name: docType.name,
       description: docType.description || '',
       price: docType.price.toString(),
-      requirements: docType.requirements || '',
+      requirements: formatRequirementsForEdit(docType.requirements),
       processing_days: docType.processing_days.toString()
     })
   }
