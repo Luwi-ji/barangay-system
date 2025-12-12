@@ -200,7 +200,7 @@ export default function NewRequest({ user, profile }) {
         .from('requests')
         .insert({
           user_id: user.id,
-          document_type_id: parseInt(formData.document_type_id),
+          document_type_id: formData.document_type_id,
           purpose: formData.purpose,
           id_image_url: idFrontFileName,
           id_image_back_url: idBackFileName,
@@ -272,7 +272,7 @@ export default function NewRequest({ user, profile }) {
       }
 
       // Get document type info for payment modal
-      const docType = documentTypes.find(dt => dt.id === parseInt(formData.document_type_id))
+      const docType = documentTypes.find(dt => dt.id.toString() === formData.document_type_id)
       const documentPrice = parseFloat(docType?.price || 0)
       
       setRequestId(createdRequestId)
@@ -342,7 +342,7 @@ export default function NewRequest({ user, profile }) {
   }
 
   const selectedDocType = documentTypes.find(
-    dt => dt.id === parseInt(formData.document_type_id)
+    dt => dt.id.toString() === formData.document_type_id
   )
 
   if (loading) {
@@ -452,22 +452,28 @@ export default function NewRequest({ user, profile }) {
 
             <div className="space-y-3 sm:space-y-4">
               <div className="flex items-center justify-center w-full">
-                <label className="flex flex-col items-center justify-center w-full h-48 sm:h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
-                  {selectedIdFront && selectedIdFront.preview ? (
-                    <img
-                      src={selectedIdFront.preview}
-                      alt="ID Front Preview"
-                      className="h-full w-full object-contain rounded-lg"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center pt-4 sm:pt-5 pb-5 sm:pb-6 px-4">
-                      <Upload className="w-8 sm:w-12 h-8 sm:h-12 text-gray-400 mb-2 sm:mb-4" />
-                      <p className="mb-2 text-xs sm:text-sm text-gray-500">
-                        <span className="font-semibold">Click to upload</span> or drag and drop
-                      </p>
-                      <p className="text-xs text-gray-500">PNG, JPG (MAX. 5MB)</p>
-                    </div>
-                  )}
+                <label className={`flex flex-col items-center justify-center w-full h-48 sm:h-64 border-2 ${selectedIdFront ? 'border-green-400 bg-green-50' : 'border-gray-300 bg-gray-50'} border-dashed rounded-lg cursor-pointer hover:bg-gray-100 transition-colors`}>
+                  <div className="flex flex-col items-center justify-center pt-4 sm:pt-5 pb-5 sm:pb-6 px-4">
+                    {selectedIdFront ? (
+                      <>
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-green-100 flex items-center justify-center mb-2 sm:mb-4">
+                          <svg className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <p className="text-xs sm:text-sm text-green-700 font-medium">File uploaded successfully</p>
+                        <p className="text-xs text-gray-500 mt-1">Click to replace</p>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-8 sm:w-12 h-8 sm:h-12 text-gray-400 mb-2 sm:mb-4" />
+                        <p className="mb-2 text-xs sm:text-sm text-gray-500">
+                          <span className="font-semibold">Click to upload</span> or drag and drop
+                        </p>
+                        <p className="text-xs text-gray-500">PNG, JPG (MAX. 5MB)</p>
+                      </>
+                    )}
+                  </div>
                   <input
                     type="file"
                     className="hidden"
@@ -517,22 +523,28 @@ export default function NewRequest({ user, profile }) {
 
             <div className="space-y-3 sm:space-y-4">
               <div className="flex items-center justify-center w-full">
-                <label className="flex flex-col items-center justify-center w-full h-48 sm:h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
-                  {selectedIdBack && selectedIdBack.preview ? (
-                    <img
-                      src={selectedIdBack.preview}
-                      alt="ID Back Preview"
-                      className="h-full w-full object-contain rounded-lg"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center pt-4 sm:pt-5 pb-5 sm:pb-6 px-4">
-                      <Upload className="w-8 sm:w-12 h-8 sm:h-12 text-gray-400 mb-2 sm:mb-4" />
-                      <p className="mb-2 text-xs sm:text-sm text-gray-500">
-                        <span className="font-semibold">Click to upload</span> or drag and drop
-                      </p>
-                      <p className="text-xs text-gray-500">PNG, JPG (MAX. 5MB)</p>
-                    </div>
-                  )}
+                <label className={`flex flex-col items-center justify-center w-full h-48 sm:h-64 border-2 ${selectedIdBack ? 'border-green-400 bg-green-50' : 'border-gray-300 bg-gray-50'} border-dashed rounded-lg cursor-pointer hover:bg-gray-100 transition-colors`}>
+                  <div className="flex flex-col items-center justify-center pt-4 sm:pt-5 pb-5 sm:pb-6 px-4">
+                    {selectedIdBack ? (
+                      <>
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-green-100 flex items-center justify-center mb-2 sm:mb-4">
+                          <svg className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <p className="text-xs sm:text-sm text-green-700 font-medium">File uploaded successfully</p>
+                        <p className="text-xs text-gray-500 mt-1">Click to replace</p>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-8 sm:w-12 h-8 sm:h-12 text-gray-400 mb-2 sm:mb-4" />
+                        <p className="mb-2 text-xs sm:text-sm text-gray-500">
+                          <span className="font-semibold">Click to upload</span> or drag and drop
+                        </p>
+                        <p className="text-xs text-gray-500">PNG, JPG (MAX. 5MB)</p>
+                      </>
+                    )}
+                  </div>
                   <input
                     type="file"
                     className="hidden"

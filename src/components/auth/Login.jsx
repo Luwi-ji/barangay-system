@@ -1,27 +1,61 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Mail, Lock, LogIn } from 'lucide-react'
-import { signIn, signInWithGoogle } from '../../services/authService'
+import { signIn, signInWithGoogle, resendConfirmationEmail } from '../../services/authService'
 
 export default function Login() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [resending, setResending] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   })
   const [error, setError] = useState('')
+  const [showResendOption, setShowResendOption] = useState(false)
+  const [resendMessage, setResendMessage] = useState('')
+
+  const handleResendConfirmation = async () => {
+    if (!formData.email) {
+      setError('Please enter your email address first')
+      return
+    }
+    
+    setResending(true)
+    setResendMessage('')
+    
+    try {
+      const result = await resendConfirmationEmail(formData.email)
+      if (result.success) {
+        setResendMessage(result.message)
+        setError('')
+        setShowResendOption(false)
+      } else {
+        setError(result.error)
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to resend confirmation email')
+    } finally {
+      setResending(false)
+    }
+  }
 
  const handleSubmit = async (e) => {
   e.preventDefault()
   setLoading(true)
   setError('')
+  setShowResendOption(false)
+  setResendMessage('')
 
   try {
     const result = await signIn(formData.email, formData.password)
 
     if (!result.success) {
       setError(result.error)
+      // Show resend option if error is about email confirmation
+      if (result.error && result.error.toLowerCase().includes('confirm')) {
+        setShowResendOption(true)
+      }
       return
     }
 
@@ -72,9 +106,27 @@ const handleGoogleSignIn = async (e) => {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {resendMessage && (
+            <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg text-sm">
+              {resendMessage}
+            </div>
+          )}
+
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
               {error}
+              {showResendOption && (
+                <div className="mt-2 pt-2 border-t border-red-200">
+                  <button
+                    type="button"
+                    onClick={handleResendConfirmation}
+                    disabled={resending}
+                    className="text-primary-700 hover:text-accent-600 font-medium underline"
+                  >
+                    {resending ? 'Sending...' : 'Resend confirmation email'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

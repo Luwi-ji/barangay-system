@@ -59,11 +59,11 @@ export default function UserProfile({ user, profile }) {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/dashboard')}
           className="flex items-center text-primary-700 hover:text-accent-600 mb-6 font-medium"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
+          Back to Dashboard
         </button>
 
         {/* Profile Card */}

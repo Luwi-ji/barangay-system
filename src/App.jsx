@@ -33,15 +33,48 @@ function App() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      if (session) {
-        fetchUserProfile(session.user.id)
-      } else {
-        setLoading(false)
+    // If the URL contains Supabase auth tokens (magic link or provider redirect),
+    // parse and store the session so the app doesn't end up on a blank page.
+    const rawHash = window.location.hash || ''
+    const rawQuery = window.location.search || ''
+    const combined = (rawHash.startsWith('#') ? rawHash.slice(1) : rawHash) || rawQuery
+
+    const processSessionFromUrl = async () => {
+      try {
+        if (combined.includes('access_token') || combined.includes('error') || combined.includes('refresh_token')) {
+          const { data, error } = await supabase.auth.getSessionFromUrl({ storeSession: true })
+          if (error) {
+            console.warn('getSessionFromUrl:', error)
+          }
+          const s = data?.session || null
+          setSession(s)
+          if (s) {
+            await fetchUserProfile(s.user.id)
+          }
+          // Clean the URL hash/query to remove tokens
+          try { window.history.replaceState({}, document.title, window.location.pathname + window.location.search) } catch (e) { /* ignore */ }
+          setLoading(false)
+          return
+        }
+      } catch (e) {
+        console.error('Error processing session from URL:', e)
       }
-    })
+
+      // Fallback: get existing session normally
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session)
+        if (session) {
+          fetchUserProfile(session.user.id)
+        } else {
+          setLoading(false)
+        }
+      }).catch(err => {
+        console.error('getSession error:', err)
+        setLoading(false)
+      })
+    }
+
+    processSessionFromUrl()
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -63,12 +96,55 @@ function App() {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single()
+        .maybeSingle()  // Use maybeSingle to avoid error when no profile exists yet
 
-      if (error) throw error
-      setUserProfile(data)
+      if (error) {
+        // Only log actual errors, not "no rows" which maybeSingle handles
+        if (error.code !== 'PGRST116') {
+          console.error('Error fetching profile:', error)
+        }
+        setUserProfile(null)
+      } else if (data) {
+        setUserProfile(data)
+      } else {
+        // Profile doesn't exist yet - try to create it as a fallback
+        // This handles cases where the trigger didn't fire or wasn't set up
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user && user.email_confirmed_at) {
+          const metadata = user.user_metadata || {}
+          const { data: newProfile, error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: userId,
+              email: (user.email || '').toLowerCase(),
+              full_name: metadata.full_name || user.email?.split('@')[0] || 'User',
+              mobile: metadata.mobile || '',
+              address: metadata.address || '',
+              birth_date: metadata.birth_date || null,
+              role: 'resident',
+              status: 'active'
+            })
+            .select()
+            .maybeSingle()
+
+          if (insertError) {
+            // Profile might have been created by trigger in the meantime, try fetching again
+            const { data: retryData } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', userId)
+              .maybeSingle()
+            setUserProfile(retryData)
+          } else {
+            setUserProfile(newProfile)
+          }
+        } else {
+          setUserProfile(null)
+        }
+      }
     } catch (error) {
       console.error('Error fetching profile:', error)
+      setUserProfile(null)
     } finally {
       setLoading(false)
     }
