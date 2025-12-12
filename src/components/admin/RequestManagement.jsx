@@ -84,12 +84,14 @@ export default function RequestManagement({ user, profile }) {
         .select(`
           id,
           request_id,
-          status,
-          changed_at,
+          old_status,
+          new_status,
+          notes,
+          created_at,
           profiles!changed_by(id, full_name)
         `)
         .eq('request_id', requestId)
-        .order('changed_at', { ascending: false })
+        .order('created_at', { ascending: false })
 
       if (error) throw error
       setStatusHistory(data || [])
@@ -570,9 +572,9 @@ export default function RequestManagement({ user, profile }) {
                   <p className="text-gray-600">
                     This request was cancelled by the resident.
                   </p>
-                  {statusHistory[0]?.status === 'Cancelled' && (
+                  {statusHistory[0]?.new_status === 'cancelled' && (
                     <p className="text-xs text-gray-500 mt-2">
-                      Cancelled on: {formatDateTime(statusHistory[0]?.changed_at)}
+                      Cancelled on: {formatDateTime(statusHistory[0]?.created_at)}
                     </p>
                   )}
                 </div>
