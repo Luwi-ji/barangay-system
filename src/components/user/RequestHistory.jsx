@@ -64,12 +64,14 @@ export default function RequestHistory({ user, profile }) {
         .select(`
           id,
           request_id,
-          status,
-          changed_at,
+          old_status,
+          new_status,
+          notes,
+          created_at,
           profiles!changed_by(id, full_name)
         `)
         .eq('request_id', requestId)
-        .order('changed_at', { ascending: false })
+        .order('created_at', { ascending: false })
 
       if (error) throw error
       setStatusHistory(data || [])
@@ -301,11 +303,11 @@ export default function RequestHistory({ user, profile }) {
 
     setCancellingId(request.id)
     try {
-      // Update request status to Cancelled
+      // Update request status to cancelled
       const { error: updateError } = await supabase
         .from('requests')
         .update({
-          status: 'Cancelled',
+          status: 'cancelled',
           updated_at: new Date().toISOString()
         })
         .eq('id', request.id)
@@ -318,8 +320,9 @@ export default function RequestHistory({ user, profile }) {
         .from('status_history')
         .insert({
           request_id: request.id,
-          status: 'Cancelled',
-          changed_by: null,
+          old_status: request.status,
+          new_status: 'cancelled',
+          changed_by: user.id,
           notes: 'Request cancelled by resident'
         })
 
@@ -521,9 +524,9 @@ export default function RequestHistory({ user, profile }) {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <StatusBadge status={history.status} />
+                          <StatusBadge status={history.new_status} />
                           <span className="text-xs text-gray-500">
-                            {formatDateTime(history.changed_at)}
+                            {formatDateTime(history.created_at)}
                           </span>
                         </div>
                         {history.notes && (
@@ -843,7 +846,7 @@ export default function RequestHistory({ user, profile }) {
                 </button>
                 
                 {/* Cancel Request Button */}
-                {selectedRequest && ['Pending', 'Processing'].includes(selectedRequest.status) && (
+                {selectedRequest && ['pending', 'processing'].includes(selectedRequest.status?.toLowerCase()) && (
                   <button
                     onClick={() => handleCancelRequest(selectedRequest)}
                     disabled={cancellingId === selectedRequest.id}
