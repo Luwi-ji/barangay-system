@@ -140,10 +140,34 @@ EXECUTE FUNCTION public.create_profile_for_user();
 SELECT 'RLS policies, email check function, and triggers fixed successfully!' as status;
 
 -- ============================================================================
--- PART 4: Add Tracking Number Generation
+-- PART 4: Add Tracking Number Generation (Race-Condition Safe)
 -- ============================================================================
 
--- Function to generate tracking number
+-- Create a sequence for tracking numbers if it doesn't exist
+DO $$
+BEGIN
+  -- Create sequence if not exists
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'tracking_number_seq') THEN
+    CREATE SEQUENCE public.tracking_number_seq START WITH 1 INCREMENT BY 1;
+    
+    -- Initialize sequence based on existing requests
+    PERFORM setval('public.tracking_number_seq', 
+      COALESCE((
+        SELECT MAX(
+          CASE 
+            WHEN tracking_number ~ '^BRG-[0-9]{4}-[0-9]+$'
+            THEN CAST(SUBSTRING(tracking_number FROM 10) AS INTEGER)
+            ELSE 0 
+          END
+        )
+        FROM public.requests
+      ), 0)
+    );
+  END IF;
+END
+$$;
+
+-- Function to generate tracking number using sequence (race-condition safe)
 CREATE OR REPLACE FUNCTION public.generate_tracking_number()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -154,15 +178,8 @@ BEGIN
   -- Format: BRG-YYYY-XXXXXX (e.g., BRG-2025-000001)
   v_year := TO_CHAR(NOW(), 'YYYY');
   
-  -- Get the next sequence number for this year
-  SELECT COALESCE(MAX(
-    CASE 
-      WHEN tracking_number LIKE 'BRG-' || v_year || '-%' 
-      THEN CAST(SUBSTRING(tracking_number FROM 10) AS INTEGER)
-      ELSE 0 
-    END
-  ), 0) + 1 INTO v_sequence
-  FROM public.requests;
+  -- Use sequence for race-condition safe unique number generation
+  v_sequence := nextval('public.tracking_number_seq');
   
   -- Generate tracking number
   v_tracking := 'BRG-' || v_year || '-' || LPAD(v_sequence::TEXT, 6, '0');
