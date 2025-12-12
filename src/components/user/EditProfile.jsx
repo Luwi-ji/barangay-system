@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import Navbar from '../shared/Navbar'
 import LoadingSpinner from '../shared/LoadingSpinner'
-import { ArrowLeft, Mail, Phone, MapPin, Calendar, User } from 'lucide-react'
+import { ArrowLeft, Mail, Phone, MapPin, Calendar, User, AlertTriangle } from 'lucide-react'
 import { updateUserProfile } from '../../services/authService'
 
 export default function EditProfile({ user, profile }) {
@@ -12,6 +12,7 @@ export default function EditProfile({ user, profile }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [originalEmail, setOriginalEmail] = useState('')
   const [formData, setFormData] = useState({
     email: '',
     fullName: '',
@@ -19,6 +20,9 @@ export default function EditProfile({ user, profile }) {
     mobile: '',
     birthDate: ''
   })
+
+  // Check if email has been changed
+  const emailChanged = formData.email !== originalEmail
 
   useEffect(() => {
     if (profile) {
@@ -29,6 +33,7 @@ export default function EditProfile({ user, profile }) {
         mobile: profile.mobile || '',
         birthDate: profile.birth_date || ''
       })
+      setOriginalEmail(profile.email || '')
       setLoading(false)
     }
   }, [profile])
@@ -65,10 +70,18 @@ export default function EditProfile({ user, profile }) {
         return
       }
 
-      setSuccess('Profile updated successfully!')
-      setTimeout(() => {
-        navigate('/profile')
-      }, 1500)
+      // Show appropriate success message based on whether email was changed
+      if (emailChanged) {
+        setSuccess('Profile updated! Please check your new email inbox and click the confirmation link to complete the email change.')
+        setTimeout(() => {
+          navigate('/profile')
+        }, 4000) // Longer timeout so user can read the message
+      } else {
+        setSuccess('Profile updated successfully!')
+        setTimeout(() => {
+          navigate('/profile')
+        }, 1500)
+      }
     } catch (error) {
       console.error('Profile update error:', error)
       setError(error.message || 'Failed to update profile')
@@ -148,13 +161,31 @@ export default function EditProfile({ user, profile }) {
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent text-black placeholder-gray-500"
+                    className={`pl-10 w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent text-black placeholder-gray-500 ${
+                      emailChanged ? 'border-amber-400 bg-amber-50' : 'border-gray-300'
+                    }`}
                     placeholder="your.email@example.com"
                   />
                 </div>
-                <p className="mt-1 text-xs text-gray-500">
-                  Note: Changing your email will require verification
-                </p>
+                {emailChanged ? (
+                  <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-amber-800">
+                          Email change requires confirmation
+                        </p>
+                        <p className="text-xs text-amber-700 mt-1">
+                          A confirmation link will be sent to your new email address. Your email will only be updated after you click the confirmation link.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Changing your email will require verification
+                  </p>
+                )}
               </div>
 
               {/* Mobile */}
