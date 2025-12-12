@@ -393,6 +393,13 @@ ON public.status_history FOR INSERT
 TO authenticated
 WITH CHECK (public.is_staff());
 
+-- Users can insert status history for their own requests (e.g., when cancelling)
+DROP POLICY IF EXISTS "status_history_insert_own" ON public.status_history;
+CREATE POLICY "status_history_insert_own"
+ON public.status_history FOR INSERT
+TO authenticated
+WITH CHECK (request_id IN (SELECT id FROM public.requests WHERE user_id = auth.uid()));
+
 -- ============================================================================
 -- PART 10: Fix Payments RLS Policies
 -- ============================================================================
