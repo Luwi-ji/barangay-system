@@ -32,34 +32,27 @@ export default function Dashboard({ user, profile }) {
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(5)
 
       if (error) throw error
 
-      setRequests(data || [])
+      const allData = data || []
+      setRequests(allData.slice(0, 5)) // Only show 5 recent in table
 
-      // Calculate stats
-      const allRequests = await supabase
-        .from('requests')
-        .select('status')
-        .eq('user_id', user.id)
-
-      if (allRequests.data) {
-        // Normalize status to handle both uppercase and lowercase
-        const normalizeStatus = (s) => (s || '').toLowerCase().replace(/\s+/g, '_')
-        
-        // Debug: Log all status values to see what we're getting
-        console.log('All request statuses:', allRequests.data.map(r => ({ original: r.status, normalized: normalizeStatus(r.status) })))
-        
-        const stats = {
-          total: allRequests.data.length,
-          pending: allRequests.data.filter(r => normalizeStatus(r.status) === 'pending').length,
-          processing: allRequests.data.filter(r => normalizeStatus(r.status) === 'processing').length,
-          ready: allRequests.data.filter(r => normalizeStatus(r.status) === 'ready_for_pickup').length
-        }
-        console.log('Calculated stats:', stats)
-        setStats(stats)
+      // Calculate stats from fetched data
+      // Normalize status to handle both uppercase and lowercase
+      const normalizeStatus = (s) => (s || '').toLowerCase().replace(/\s+/g, '_')
+      
+      // Debug: Log all status values to see what we're getting
+      console.log('All request statuses:', allData.map(r => ({ original: r.status, normalized: normalizeStatus(r.status) })))
+      
+      const calculatedStats = {
+        total: allData.length,
+        pending: allData.filter(r => normalizeStatus(r.status) === 'pending').length,
+        processing: allData.filter(r => normalizeStatus(r.status) === 'processing').length,
+        ready: allData.filter(r => normalizeStatus(r.status) === 'ready_for_pickup').length
       }
+      console.log('Calculated stats:', calculatedStats)
+      setStats(calculatedStats)
     } catch (error) {
       console.error('Error fetching requests:', error)
     } finally {
