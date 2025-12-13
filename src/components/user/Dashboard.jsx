@@ -45,11 +45,13 @@ export default function Dashboard({ user, profile }) {
         .eq('user_id', user.id)
 
       if (allRequests.data) {
+        // Normalize status to handle both uppercase and lowercase
+        const normalizeStatus = (s) => (s || '').toLowerCase().replace(/\s+/g, '_')
         const stats = {
           total: allRequests.data.length,
-          pending: allRequests.data.filter(r => r.status === 'Pending').length,
-          processing: allRequests.data.filter(r => r.status === 'Processing').length,
-          ready: allRequests.data.filter(r => r.status === 'Ready for Pickup').length
+          pending: allRequests.data.filter(r => normalizeStatus(r.status) === 'pending').length,
+          processing: allRequests.data.filter(r => normalizeStatus(r.status) === 'processing').length,
+          ready: allRequests.data.filter(r => normalizeStatus(r.status) === 'ready_for_pickup').length
         }
         setStats(stats)
       }
@@ -109,10 +111,10 @@ export default function Dashboard({ user, profile }) {
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-gray-600">Processing</p>
-                <p className="text-xl sm:text-3xl font-bold text-primary-700 mt-1">{stats.processing}</p>
+                <p className="text-xl sm:text-3xl font-bold mt-1" style={{ color: '#2563eb' }}>{stats.processing}</p>
               </div>
-              <div className="w-9 sm:w-12 h-9 sm:w-12 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <AlertCircle className="w-4 sm:w-6 h-4 sm:h-6 text-primary-700" />
+              <div className="w-9 sm:w-12 h-9 sm:w-12 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#dbeafe' }}>
+                <AlertCircle className="w-4 sm:w-6 h-4 sm:h-6" style={{ color: '#2563eb' }} />
               </div>
             </div>
           </div>
