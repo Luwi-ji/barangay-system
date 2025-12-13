@@ -47,12 +47,17 @@ export default function Dashboard({ user, profile }) {
       if (allRequests.data) {
         // Normalize status to handle both uppercase and lowercase
         const normalizeStatus = (s) => (s || '').toLowerCase().replace(/\s+/g, '_')
+        
+        // Debug: Log all status values to see what we're getting
+        console.log('All request statuses:', allRequests.data.map(r => ({ original: r.status, normalized: normalizeStatus(r.status) })))
+        
         const stats = {
           total: allRequests.data.length,
           pending: allRequests.data.filter(r => normalizeStatus(r.status) === 'pending').length,
           processing: allRequests.data.filter(r => normalizeStatus(r.status) === 'processing').length,
           ready: allRequests.data.filter(r => normalizeStatus(r.status) === 'ready_for_pickup').length
         }
+        console.log('Calculated stats:', stats)
         setStats(stats)
       }
     } catch (error) {
